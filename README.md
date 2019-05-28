@@ -4,14 +4,14 @@ Forge chunk pre-generator
 ## Commands
 
 #### Create
-Setup a new pre-generator with the given radius of chunks around the center block coords
+Setup a new pre-generator with the given radius of chunks centered around the given block coords
 ```
 /pregen create <centerX> <centerZ> <chunkRadius>
 ```
 
 Notes:
-- generation comences automatically after creating the pregenerator
-- the pregenerator will persist through restarts until the task is complete or cancelled
+- generation comences automatically after creating the pre-generator
+- the pre-generator will persist through restarts until the task is complete or cancelled
 
 #### Start
 Start a paused pre-generator
