@@ -102,22 +102,9 @@ public class PreGenForge {
             return;
         }
 
-        File file = getConfigFile(server);
         try {
-            if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
-                print("Unable to create parent directory: " + file.getParent());
-                return;
-            }
-
-            if (!file.exists() && !file.createNewFile()) {
-                print("Unable to create file: " + file.getPath());
-                return;
-            }
-
-            try (FileWriter writer = new FileWriter(file)) {
-                new GsonBuilder().setPrettyPrinting().create().toJson(config.toJson(), writer);
-                writer.flush();
-            }
+            File file = getConfigFile(server);
+            saveConfig(config, file);
         } catch (IOException e) {
             e.printStackTrace();
         }
