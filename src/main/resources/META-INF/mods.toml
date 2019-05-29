@@ -2,12 +2,12 @@ modLoader="javafml"
 loaderVersion="[25,)"
 issueTrackerURL="https://github.com/dags-/PreGenForge/issues"
 [[mods]]
-    modId="pregenforge"
     displayName="PreGenForge"
-    version="0.0.1"
+    modId="pregenforge"
+    version="@version@"
     authors="dags"
     description="A chunk pre-generator"
-[[dependencies.terragen]]
+[[dependencies.pregenforge]]
     modId="minecraft"
     mandatory=true
     versionRange="[1.13.2]"
