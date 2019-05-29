@@ -1,5 +1,6 @@
 package me.dags.pregen.pregenerator;
 
+import com.google.common.base.Stopwatch;
 import me.dags.pregen.PreGenForge;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.WorldServer;
@@ -9,23 +10,26 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class PreGenerator {
 
-    public static int bufferSize = 40;
+    public static int limiter = 50;
+    private static final long STATS_INTERVAL = 30;
+    private static final long CLEANUP_INTERVAL = 60 * 3;
 
-    private final int regionCount;
     private final int chunkCount;
     private final PreGenConfig config;
     private final WorldServer worldServer;
     private final Iterator<PreGenRegion> regions;
-    private final List<Chunk> chunks = new ArrayList<>(bufferSize * 2);
+    private final List<Chunk> buffer = new ArrayList<>(limiter * 2);
+
+    private final Stopwatch statsTimer = Stopwatch.createUnstarted();
+    private final Stopwatch cleanupTimer = Stopwatch.createUnstarted();
 
     private boolean started = false;
-    private long ticks = 0;
-    private long region = 0;
-    private long visitCount = 0;
-    private long completeCount = 0;
+    private long chunks = 0;
+    private long prevChunks = 0;
     private PreGenRegion.ChunkIterator chunkIterator = null;
 
     public PreGenerator(WorldServer worldServer, PreGenConfig config) {
@@ -33,22 +37,28 @@ public class PreGenerator {
         this.config = config;
         this.worldServer = worldServer;
         this.regions = regions.iterator();
-        this.regionCount = regions.size();
+        int regionCount = regions.size();
         this.chunkCount = (PreGenRegion.SIZE * PreGenRegion.SIZE * regionCount) - (config.getChunkIndex() + 1);
+    }
+
+    public String getName() {
+        return worldServer.getWorldInfo().getWorldName();
     }
 
     @SubscribeEvent
     public void tick(TickEvent.ServerTickEvent event) {
-        ticks++;
-
-        if (feedback()) {
+        if (statsTimer.elapsed(TimeUnit.SECONDS) >= STATS_INTERVAL) {
             printStats();
+            PreGenForge.savePreGenerator(worldServer, config);
+            statsTimer.reset().start();
         }
 
-        if (cleanup()) {
-            PreGenForge.savePreGenerator(worldServer, config);
-            System.gc();
+        if (cleanupTimer.elapsed(TimeUnit.SECONDS) >= CLEANUP_INTERVAL) {
+            statsTimer.stop();
             worldServer.getChunkProvider().flushToDisk();
+            System.gc();
+            cleanupTimer.reset().start();
+            statsTimer.start();
         }
 
         if (isComplete()) {
@@ -58,7 +68,7 @@ public class PreGenerator {
             return;
         }
 
-        if (chunks.size() > bufferSize / 2) {
+        if (buffer.size() > limiter) {
             drainQueue();
             return;
         }
@@ -67,24 +77,28 @@ public class PreGenerator {
     }
 
     public void start() {
-        printStarted();
         started = true;
+        statsTimer.start();
+        cleanupTimer.start();
         MinecraftForge.EVENT_BUS.register(this);
+        PreGenForge.printf("Started for world: %s", getName());
     }
 
     public void cancel() {
         if (pause()) {
             PreGenForge.deletePreGenerator(worldServer);
-            PreGenForge.print("Cancelled pre-generator on world: " + worldServer.getWorldInfo().getWorldName());
+            PreGenForge.print("Cancelled for world: %s", getName());
         }
     }
 
     public boolean pause() {
         if (started) {
             started = false;
+            statsTimer.stop();
+            cleanupTimer.stop();
             PreGenForge.savePreGenerator(worldServer, config);
             MinecraftForge.EVENT_BUS.unregister(this);
-            PreGenForge.print("Paused pre-generator on world: " + worldServer.getWorldInfo().getWorldName());
+            PreGenForge.printf("Paused for world: %s", getName());
             return true;
         }
         return false;
@@ -94,21 +108,13 @@ public class PreGenerator {
         return !regions.hasNext() && !chunkIterator.hasNext();
     }
 
-    private boolean feedback() {
-        return ticks % 200 == 0;
-    }
-
-    private boolean cleanup() {
-        return ticks % 600 == 0;
-    }
-
     private void drainQueue() {
-        Iterator<Chunk> iterator = chunks.iterator();
+        Iterator<Chunk> iterator = buffer.iterator();
         while (iterator.hasNext()) {
             Chunk next = iterator.next();
             if (next.isLoaded()) {
                 iterator.remove();
-                completeCount++;
+                chunks++;
                 worldServer.getChunkProvider().queueUnload(next);
             }
         }
@@ -125,40 +131,38 @@ public class PreGenerator {
 
             int chunkIndex = chunkIterator == null ? config.getChunkIndex() : -1;
             chunkIterator = region.iterator(chunkIndex);
-            this.region++;
         }
 
-        int limit = bufferSize / 2;
+        int limit = limiter;
         while (chunkIterator.hasNext() && limit-- > 0) {
             ChunkPos pos = chunkIterator.next();
             config.setChunkIndex(chunkIterator.index());
 
             Chunk chunk = worldServer.getChunkProvider().getChunk(pos.x, pos.z, true, true);
             if (chunk != null) {
-                visitCount++;
-                chunks.add(chunk);
+                buffer.add(chunk);
             }
         }
     }
 
-    private void printStarted() {
-        PreGenForge.print("Started pre-generating chunks for world: " + worldServer.getWorldInfo().getWorldName());
-    }
-
     private void printStats() {
-        PreGenForge.print(
-                "==================================",
-                String.format("Progress: %.2f%%", (completeCount * 100F) / chunkCount),
-                String.format("Regions: %s / %s", region, regionCount),
-                String.format("Chunks: %s / %s", completeCount, chunkCount)
-        );
+        float prog = getProgress();
+        float rate = getRate();
+        PreGenForge.printf("Progress: %.2f%%, Chunks: %s/%s (%.2f/sec)", prog, chunks, chunkCount, rate);
     }
 
     private void printDone() {
-        PreGenForge.print(
-                "==================================",
-                String.format("Completed chunks: %s", chunkCount),
-                String.format("Time taken: %s secs", (ticks / 20))
-        );
+        PreGenForge.print("Complete!");
+    }
+
+    private float getProgress() {
+        return (chunks * 100F) / chunkCount;
+    }
+
+    private float getRate() {
+        float chunkDelta = chunks - prevChunks;
+        float timeDelta = statsTimer.elapsed(TimeUnit.MILLISECONDS) / 1000F;
+        prevChunks = chunks;
+        return chunkDelta / timeDelta;
     }
 }

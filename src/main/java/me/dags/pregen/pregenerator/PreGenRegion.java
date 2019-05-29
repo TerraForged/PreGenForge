@@ -5,6 +5,7 @@ import net.minecraft.util.math.ChunkPos;
 public class PreGenRegion {
 
     public static final int SIZE = 32;
+    public static final int ITERATOR_INDEX = -1;
 
     private final int x;
     private final int z;
@@ -15,7 +16,7 @@ public class PreGenRegion {
     }
 
     public ChunkIterator iterator() {
-        return iterator(-1);
+        return iterator(ITERATOR_INDEX);
     }
 
     public ChunkIterator iterator(int index) {

@@ -64,13 +64,17 @@ public class PreGenForge {
         }
     }
 
+    public static void printf(String format, Object... args) {
+        print(String.format(format, args));
+    }
+
     public static void print(String... lines) {
         for (String line : lines) {
-            print(new TextComponentString(line));
+            print(new TextComponentString("[PreGen] " + line));
         }
     }
 
-    public static void print(ITextComponent message) {
+    private static void print(ITextComponent message) {
         messageSink.accept(message);
     }
 
@@ -94,7 +98,10 @@ public class PreGenForge {
     }
 
     public static void cancelGenerator(WorldServer worldServer) {
-        getPreGenerator(worldServer).ifPresent(PreGenerator::cancel);
+        getPreGenerator(worldServer).ifPresent(gen -> {
+            gen.cancel();
+            generators.remove(gen.getName());
+        });
     }
 
     public static void savePreGenerator(WorldServer server, PreGenConfig config) {
@@ -112,12 +119,12 @@ public class PreGenForge {
 
     public static void saveConfig(PreGenConfig config, File file) throws IOException {
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
-            print("Unable to create parent directory: " + file.getParent());
+            printf("Unable to create parent directory: %s", file.getParent());
             return;
         }
 
         if (!file.exists() && !file.createNewFile()) {
-            print("Unable to create file: " + file.getPath());
+            printf("Unable to create file: %s", file.getPath());
             return;
         }
 
@@ -140,7 +147,7 @@ public class PreGenForge {
     public static void deletePreGenerator(WorldServer server) {
         File file = getConfigFile(server);
         if (file.exists() && file.delete()) {
-            print("Deleted pre-generator for world: " + server.getWorldInfo().getWorldName());
+            printf("Deleted pre-generator for world: %s", server.getWorldInfo().getWorldName());
         }
     }
 

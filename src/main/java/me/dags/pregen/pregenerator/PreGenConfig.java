@@ -12,7 +12,7 @@ public class PreGenConfig {
     private final int radius;
 
     private int regionIndex = 0;
-    private int chunkIndex = -1;
+    private int chunkIndex = PreGenRegion.ITERATOR_INDEX;
 
     public PreGenConfig(int x, int z, int radius) {
         this.x = x;
