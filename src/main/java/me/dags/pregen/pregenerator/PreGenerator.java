@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 
 public class PreGenerator {
 
-    public static int limiter = 50;
     private static final long STATS_INTERVAL = 30;
     private static final long CLEANUP_INTERVAL = 60 * 3;
 
@@ -22,7 +21,7 @@ public class PreGenerator {
     private final PreGenConfig config;
     private final WorldServer worldServer;
     private final Iterator<PreGenRegion> regions;
-    private final List<Chunk> buffer = new ArrayList<>(limiter * 2);
+    private final List<Chunk> buffer;
 
     private final Stopwatch statsTimer = Stopwatch.createUnstarted();
     private final Stopwatch cleanupTimer = Stopwatch.createUnstarted();
@@ -37,6 +36,7 @@ public class PreGenerator {
         this.config = config;
         this.worldServer = worldServer;
         this.regions = regions.iterator();
+        this.buffer = new ArrayList<>(config.getLimit());
         int regionCount = regions.size();
         this.chunkCount = (PreGenRegion.SIZE * PreGenRegion.SIZE * regionCount) - (config.getChunkIndex() + 1);
     }
@@ -68,7 +68,7 @@ public class PreGenerator {
             return;
         }
 
-        if (buffer.size() > limiter) {
+        if (buffer.size() > config.getLimit()) {
             drainQueue();
             return;
         }
@@ -104,6 +104,11 @@ public class PreGenerator {
         return false;
     }
 
+    public void setLimit(int limit) {
+        config.setLimit(limit);
+        PreGenForge.printf("Set limit: %s", limit);
+    }
+
     private boolean isComplete() {
         return !regions.hasNext() && !chunkIterator.hasNext();
     }
@@ -133,7 +138,7 @@ public class PreGenerator {
             chunkIterator = region.iterator(chunkIndex);
         }
 
-        int limit = limiter;
+        int limit = config.getLimit() / 2;
         while (chunkIterator.hasNext() && limit-- > 0) {
             ChunkPos pos = chunkIterator.next();
             config.setChunkIndex(chunkIterator.index());

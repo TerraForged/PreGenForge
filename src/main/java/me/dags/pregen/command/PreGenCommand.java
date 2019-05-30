@@ -64,8 +64,9 @@ public class PreGenCommand {
     }
 
     private static int limit(CommandContext<CommandSource> context) {
-        PreGenerator.limiter = IntegerArgumentType.getInteger(context, "limit");
-        PreGenForge.print("Set limit: " + PreGenerator.limiter);
+        int limit = IntegerArgumentType.getInteger(context, "limit");
+        WorldServer worldServer = context.getSource().getWorld();
+        PreGenForge.getPreGenerator(worldServer).ifPresent(preGenerator -> preGenerator.setLimit(limit));
         return 0;
     }
 

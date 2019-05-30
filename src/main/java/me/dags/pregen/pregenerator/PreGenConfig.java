@@ -11,6 +11,7 @@ public class PreGenConfig {
     private final int z;
     private final int radius;
 
+    private int limit = 40;
     private int regionIndex = 0;
     private int chunkIndex = PreGenRegion.ITERATOR_INDEX;
 
@@ -24,6 +25,7 @@ public class PreGenConfig {
         x = root.get("x").getAsInt();
         z = root.get("z").getAsInt();
         radius = root.get("radius").getAsInt();
+        limit = root.get("limit").getAsInt();
         regionIndex = root.get("region").getAsInt();
         chunkIndex = root.get("chunk").getAsInt();
     }
@@ -34,6 +36,10 @@ public class PreGenConfig {
 
     public int getChunkIndex() {
         return chunkIndex;
+    }
+
+    public int getLimit() {
+        return limit;
     }
 
     public boolean isValid() {
@@ -53,26 +59,19 @@ public class PreGenConfig {
         chunkIndex = index;
     }
 
+    public void setLimit(int limit) {
+        this.limit = limit;
+    }
+
     public JsonObject toJson() {
         JsonObject root = new JsonObject();
         root.addProperty("x", x);
         root.addProperty("z", z);
         root.addProperty("radius", radius);
+        root.addProperty("limit", limit);
         root.addProperty("region", regionIndex);
         root.addProperty("chunk", chunkIndex);
         return root;
-    }
-
-    public static PreGenConfig fromJson(JsonObject root) {
-        int x = root.get("x").getAsInt();
-        int z = root.get("z").getAsInt();
-        int radius = root.get("radius").getAsInt();
-        int regionIndex = root.get("region").getAsInt();
-        int chunkIndex = root.get("chunk").getAsInt();
-        PreGenConfig config = new PreGenConfig(x, z, radius);
-        config.regionIndex = regionIndex;
-        config.chunkIndex = chunkIndex;
-        return config;
     }
 
     private static List<PreGenRegion> getRegions(int centerX, int centerZ, int radius) {
