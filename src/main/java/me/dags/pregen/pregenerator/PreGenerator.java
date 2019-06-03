@@ -26,9 +26,9 @@ public class PreGenerator {
     private final Stopwatch statsTimer = Stopwatch.createUnstarted();
     private final Stopwatch cleanupTimer = Stopwatch.createUnstarted();
 
-    private boolean started = false;
     private long chunks = 0;
     private long prevChunks = 0;
+    private boolean running = false;
     private PreGenRegion.ChunkIterator chunkIterator = null;
 
     public PreGenerator(WorldServer worldServer, PreGenConfig config) {
@@ -77,7 +77,7 @@ public class PreGenerator {
     }
 
     public void start() {
-        started = true;
+        running = true;
         statsTimer.start();
         cleanupTimer.start();
         MinecraftForge.EVENT_BUS.register(this);
@@ -85,17 +85,17 @@ public class PreGenerator {
     }
 
     public void cancel() {
-        if (pause()) {
-            PreGenForge.deletePreGenerator(worldServer);
-            PreGenForge.print("Cancelled for world: %s", getName());
+        pause();
+        if (PreGenForge.deletePreGenerator(worldServer)) {
+            PreGenForge.printf("Removed for world: %s", getName());
         }
     }
 
     public boolean pause() {
-        if (started) {
-            started = false;
-            statsTimer.stop();
-            cleanupTimer.stop();
+        if (running) {
+            running = false;
+            statsTimer.stop().reset();
+            cleanupTimer.stop().reset();
             PreGenForge.savePreGenerator(worldServer, config);
             MinecraftForge.EVENT_BUS.unregister(this);
             PreGenForge.printf("Paused for world: %s", getName());
@@ -116,11 +116,11 @@ public class PreGenerator {
     private void drainQueue() {
         Iterator<Chunk> iterator = buffer.iterator();
         while (iterator.hasNext()) {
-            Chunk next = iterator.next();
-            if (next.isLoaded()) {
+            Chunk chunk = iterator.next();
+            if (chunk.isLoaded()) {
                 iterator.remove();
                 chunks++;
-                worldServer.getChunkProvider().queueUnload(next);
+                worldServer.getChunkProvider().queueUnload(chunk);
             }
         }
     }

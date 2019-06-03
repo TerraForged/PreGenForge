@@ -144,11 +144,9 @@ public class PreGenForge {
         }
     }
 
-    public static void deletePreGenerator(WorldServer server) {
+    public static boolean deletePreGenerator(WorldServer server) {
         File file = getConfigFile(server);
-        if (file.exists() && file.delete()) {
-            printf("Deleted pre-generator for world: %s", server.getWorldInfo().getWorldName());
-        }
+        return file.exists() && file.delete();
     }
 
     private static File getConfigFile(WorldServer server) {
