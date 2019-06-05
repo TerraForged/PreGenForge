@@ -3,21 +3,25 @@ Forge chunk pre-generator
 
 ## Commands
 
-#### Create
-Setup a new pre-generator with the given radius of chunks centered around the given block coords
-```
-/pregen create <centerX> <centerZ> <chunkRadius>
-```
-
-Notes:
-- generation comences automatically after creating the pre-generator
-- the pre-generator will persist through restarts until the task is complete or cancelled
-
 #### Start
-Start a paused pre-generator
+Setup a new pre-generator with the given radius of chunks centred around the given block coords
 ```
-/pregen start
+/pregen start <centreX> <centreZ> <radius>
 ```
+
+Arguments:
+- centreX/centreZ - the centre block position to generate chunks around
+- radius - the radius in chunks to generate
+
+```
+/pregen start <centreX> <centreZ> <fromRadius> <toRadius>
+```
+
+Arguments:
+- centreX/centreZ - the centre block position to generate chunks around
+- fromRadius - the radius in chunks at which the generator should start
+- toRadius - the radius in chunks at which the generator should finish
+
 
 #### Pause
 Pause a running pre-generator
@@ -25,19 +29,23 @@ Pause a running pre-generator
 /pregen pause
 ```
 
+
+#### Resume
+Resume a paused pre-generator
+```
+/pregen resume
+```
+
+
 #### Cancel
 Stop and delete a pre-generator
 ```
 /pregen cancel
 ```
 
+
 #### Limit
 Control the number of chunks to queue per tick
 ```]
 /pregen limit <1-100>
 ```
-
-Notes:
-- lower values will save cpu/ram usage but increase the overall task time
-- higher values will shorten the task time but increase cpu/ram usage
-- **if cpu/ram usage gets too high, the entire server may grind to a snails pace negating any of the benefits of the higher limit value**
