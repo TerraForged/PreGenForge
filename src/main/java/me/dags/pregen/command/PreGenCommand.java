@@ -23,16 +23,18 @@ public class PreGenCommand {
     public static LiteralArgumentBuilder<CommandSource> command() {
         return Commands.literal("pregen")
                 .requires(predicate())
-                .then(Commands.literal("start").executes(PreGenCommand::start))
                 .then(Commands.literal("pause").executes(PreGenCommand::pause))
+                .then(Commands.literal("resume").executes(PreGenCommand::resume))
                 .then(Commands.literal("cancel").executes(PreGenCommand::cancel))
                 .then(Commands.literal("limit")
                         .then(Commands.argument("limit", IntegerArgumentType.integer(1, 100))
                                 .executes(PreGenCommand::limit)))
-                .then(Commands.literal("create")
+                .then(Commands.literal("start")
                         .then(Commands.argument("center", Vec2Argument.vec2())
-                                .then(Commands.argument("radius", IntegerArgumentType.integer())
-                                        .executes(PreGenCommand::create))));
+                                .then(Commands.argument("radius", IntegerArgumentType.integer(1))
+                                        .executes(PreGenCommand::start)
+                                        .then(Commands.argument("radius2", IntegerArgumentType.integer(1))
+                                                .executes(PreGenCommand::startRange)))));
     }
 
     private static Predicate<CommandSource> predicate() {
@@ -45,7 +47,7 @@ public class PreGenCommand {
         };
     }
 
-    private static int start(CommandContext<CommandSource> context) {
+    private static int resume(CommandContext<CommandSource> context) {
         WorldServer worldServer = context.getSource().getWorld();
         PreGenForge.startGenerator(worldServer);
         return 0;
@@ -70,7 +72,7 @@ public class PreGenCommand {
         return 0;
     }
 
-    private static int create(CommandContext<CommandSource> context) throws CommandSyntaxException {
+    private static int start(CommandContext<CommandSource> context) throws CommandSyntaxException {
         Vec2f center = Vec2Argument.getVec2f(context, "center");
         int radius = IntegerArgumentType.getInteger(context, "radius");
 
@@ -80,6 +82,27 @@ public class PreGenCommand {
 
         WorldServer world = context.getSource().getServer().getWorld(DimensionType.OVERWORLD);
         PreGenConfig config = new PreGenConfig(regionX, regionZ, regionRadius);
+        PreGenerator generator = PreGenForge.createGenerator(world, config);
+        generator.start();
+
+        return 0;
+    }
+
+    private static int startRange(CommandContext<CommandSource> context) throws CommandSyntaxException {
+        Vec2f center = Vec2Argument.getVec2f(context, "center");
+        int innerRadius = IntegerArgumentType.getInteger(context, "radius");
+        int outerRadius = IntegerArgumentType.getInteger(context, "radius2");
+
+        int regionX = PreGenRegion.blockToRegion((int) center.x);
+        int regionZ = PreGenRegion.blockToRegion((int) center.y);
+        int regionInnerRadius = PreGenRegion.chunkToRegion(innerRadius);
+        int regionOuterRadius = PreGenRegion.chunkToRegion(outerRadius);
+        int regionStart = 1 + ((1 + regionInnerRadius * 2) * (1 + regionInnerRadius * 2));
+
+        PreGenConfig config = new PreGenConfig(regionX, regionZ, regionOuterRadius);
+        config.setRegionIndex(regionStart);
+
+        WorldServer world = context.getSource().getServer().getWorld(DimensionType.OVERWORLD);
         PreGenerator generator = PreGenForge.createGenerator(world, config);
         generator.start();
 
