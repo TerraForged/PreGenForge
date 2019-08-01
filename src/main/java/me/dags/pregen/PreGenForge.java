@@ -6,10 +6,9 @@ import com.google.gson.JsonParser;
 import me.dags.pregen.command.PreGenCommand;
 import me.dags.pregen.pregenerator.PreGenConfig;
 import me.dags.pregen.pregenerator.PreGenerator;
-import net.minecraft.network.rcon.IServer;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.WorldServer;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.world.ServerWorld;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
@@ -29,22 +28,16 @@ import java.util.function.Consumer;
 public class PreGenForge {
 
     private static final Map<String, PreGenerator> generators = new HashMap<>();
-    private static Consumer<ITextComponent> messageSink = t -> {};
+    private static Consumer<ITextComponent> messageSink = t -> {
+    };
 
     @SubscribeEvent
     public static void starting(FMLServerStartingEvent event) {
-        event.getCommandDispatcher().register(PreGenCommand.command());
-
-        if (event.getServer() instanceof IServer) {
-            ((IServer) event.getServer()).setProperty("max-tick-time", -1);
-        }
-    }
-
-    @SubscribeEvent
-    public static void started(FMLServerStartingEvent event) {
         messageSink = event.getServer()::sendMessage;
 
-        for (WorldServer worldServer : event.getServer().getWorlds()) {
+        event.getCommandDispatcher().register(PreGenCommand.command());
+
+        for (ServerWorld worldServer : event.getServer().getWorlds()) {
             File file = getConfigFile(worldServer);
             if (file.exists()) {
                 try {
@@ -59,7 +52,7 @@ public class PreGenForge {
 
     @SubscribeEvent
     public static void stopping(FMLServerStoppingEvent event) {
-        for (WorldServer worldServer : event.getServer().getWorlds()) {
+        for (ServerWorld worldServer : event.getServer().getWorlds()) {
             pauseGenerator(worldServer);
         }
     }
@@ -70,7 +63,7 @@ public class PreGenForge {
 
     public static void print(String... lines) {
         for (String line : lines) {
-            print(new TextComponentString("[PreGen] " + line));
+            print(new StringTextComponent("[PreGen] " + line));
         }
     }
 
@@ -78,33 +71,33 @@ public class PreGenForge {
         messageSink.accept(message);
     }
 
-    public static Optional<PreGenerator> getPreGenerator(WorldServer server) {
+    public static Optional<PreGenerator> getPreGenerator(ServerWorld server) {
         return Optional.ofNullable(generators.get(server.getWorldInfo().getWorldName()));
     }
 
-    public static PreGenerator createGenerator(WorldServer worldServer, PreGenConfig config) {
+    public static PreGenerator createGenerator(ServerWorld worldServer, PreGenConfig config) {
         cancelGenerator(worldServer);
         PreGenerator generator = new PreGenerator(worldServer, config);
         generators.put(worldServer.getWorldInfo().getWorldName(), generator);
         return generator;
     }
 
-    public static void startGenerator(WorldServer worldServer) {
+    public static void startGenerator(ServerWorld worldServer) {
         getPreGenerator(worldServer).ifPresent(PreGenerator::start);
     }
 
-    public static void pauseGenerator(WorldServer worldServer) {
+    public static void pauseGenerator(ServerWorld worldServer) {
         getPreGenerator(worldServer).ifPresent(PreGenerator::pause);
     }
 
-    public static void cancelGenerator(WorldServer worldServer) {
+    public static void cancelGenerator(ServerWorld worldServer) {
         getPreGenerator(worldServer).ifPresent(gen -> {
             gen.cancel();
             generators.remove(gen.getName());
         });
     }
 
-    public static void savePreGenerator(WorldServer server, PreGenConfig config) {
+    public static void savePreGenerator(ServerWorld server, PreGenConfig config) {
         if (!config.isValid()) {
             return;
         }
@@ -144,12 +137,12 @@ public class PreGenForge {
         }
     }
 
-    public static boolean deletePreGenerator(WorldServer server) {
+    public static boolean deletePreGenerator(ServerWorld server) {
         File file = getConfigFile(server);
         return file.exists() && file.delete();
     }
 
-    private static File getConfigFile(WorldServer server) {
-        return new File(server.getChunkSaveLocation().getAbsoluteFile(), "pregen.json");
+    private static File getConfigFile(ServerWorld server) {
+        return new File(server.getSaveHandler().getWorldDirectory().getAbsoluteFile(), "pregen.json");
     }
 }

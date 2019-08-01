@@ -3,13 +3,16 @@ package me.dags.pregen.pregenerator;
 import com.google.common.base.Stopwatch;
 import me.dags.pregen.PreGenForge;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.ServerWorld;
+import net.minecraft.world.chunk.ChunkStatus;
+import net.minecraft.world.chunk.IChunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class PreGenerator {
@@ -19,9 +22,9 @@ public class PreGenerator {
 
     private final int chunkCount;
     private final PreGenConfig config;
-    private final WorldServer worldServer;
+    private final ServerWorld worldServer;
     private final Iterator<PreGenRegion> regions;
-    private final List<Chunk> buffer;
+    private final List<IChunk> buffer;
 
     private final Stopwatch statsTimer = Stopwatch.createUnstarted();
     private final Stopwatch cleanupTimer = Stopwatch.createUnstarted();
@@ -31,7 +34,7 @@ public class PreGenerator {
     private boolean running = false;
     private PreGenRegion.ChunkIterator chunkIterator = null;
 
-    public PreGenerator(WorldServer worldServer, PreGenConfig config) {
+    public PreGenerator(ServerWorld worldServer, PreGenConfig config) {
         List<PreGenRegion> regions = config.getRegions();
         this.config = config;
         this.worldServer = worldServer;
@@ -55,14 +58,16 @@ public class PreGenerator {
 
         if (cleanupTimer.elapsed(TimeUnit.SECONDS) >= CLEANUP_INTERVAL) {
             statsTimer.stop();
-            worldServer.getChunkProvider().flushToDisk();
-            System.gc();
+            cleanUp();
             cleanupTimer.reset().start();
             statsTimer.start();
         }
 
+        worldServer.getChunkProvider().getLoadedChunkCount();
+
         if (isComplete()) {
             drainQueue();
+            cleanUp();
             printDone();
             cancel();
             return;
@@ -94,6 +99,7 @@ public class PreGenerator {
     public boolean pause() {
         if (running) {
             running = false;
+            cleanUp();
             statsTimer.stop().reset();
             cleanupTimer.stop().reset();
             PreGenForge.savePreGenerator(worldServer, config);
@@ -110,19 +116,27 @@ public class PreGenerator {
     }
 
     private boolean isComplete() {
-        return !regions.hasNext() && !chunkIterator.hasNext();
+        return !regions.hasNext() && (chunkIterator != null && !chunkIterator.hasNext());
     }
 
     private void drainQueue() {
-        Iterator<Chunk> iterator = buffer.iterator();
+        Iterator<IChunk> iterator = buffer.iterator();
         while (iterator.hasNext()) {
-            Chunk chunk = iterator.next();
-            if (chunk.isLoaded()) {
+            IChunk task = iterator.next();
+            if (task.getStatus() == ChunkStatus.FULL) {
                 iterator.remove();
                 chunks++;
-                worldServer.getChunkProvider().queueUnload(chunk);
+            } else {
+                System.out.println(task.getStatus());
             }
         }
+    }
+
+
+    private void cleanUp() {
+        worldServer.getServer().save(false, true, true);
+        System.gc();
+        cleanupTimer.reset().start();
     }
 
     private void visitRegion() {
@@ -142,11 +156,11 @@ public class PreGenerator {
         while (chunkIterator.hasNext() && limit-- > 0) {
             ChunkPos pos = chunkIterator.next();
             config.setChunkIndex(chunkIterator.index());
-
-            Chunk chunk = worldServer.getChunkProvider().getChunk(pos.x, pos.z, true, true);
-            if (chunk != null) {
-                buffer.add(chunk);
+            IChunk chunk = worldServer.getChunkProvider().getChunk(pos.x, pos.z, ChunkStatus.FULL, true);
+            if (chunk == null) {
+                continue;
             }
+            buffer.add(chunk);
         }
     }
 
