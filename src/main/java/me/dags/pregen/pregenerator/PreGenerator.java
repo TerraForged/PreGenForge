@@ -3,12 +3,12 @@ package me.dags.pregen.pregenerator;
 import com.google.common.base.Stopwatch;
 import me.dags.pregen.PreGenForge;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.IChunk;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.ArrayList;
 import java.util.Iterator;

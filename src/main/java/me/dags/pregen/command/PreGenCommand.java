@@ -1,12 +1,9 @@
 package me.dags.pregen.command;
 
-import com.mojang.brigadier.Message;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandExceptionType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import me.dags.pregen.PreGenForge;
 import me.dags.pregen.pregenerator.PreGenConfig;
 import me.dags.pregen.pregenerator.PreGenRegion;
@@ -14,12 +11,10 @@ import me.dags.pregen.pregenerator.PreGenerator;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.command.arguments.Vec2Argument;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextComponent;
-import net.minecraft.world.ServerWorld;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.server.ServerWorld;
 
 import java.util.function.Predicate;
 

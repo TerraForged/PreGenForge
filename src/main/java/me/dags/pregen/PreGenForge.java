@@ -8,7 +8,7 @@ import me.dags.pregen.pregenerator.PreGenConfig;
 import me.dags.pregen.pregenerator.PreGenerator;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.world.ServerWorld;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
