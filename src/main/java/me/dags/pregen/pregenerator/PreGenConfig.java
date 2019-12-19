@@ -1,6 +1,5 @@
 package me.dags.pregen.pregenerator;
 
-import afu.org.checkerframework.checker.oigj.qual.O;
 import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
@@ -75,7 +74,7 @@ public class PreGenConfig {
         return root;
     }
 
-    private static List<PreGenRegion> getRegions(int centerX, int centerZ, int radius) {
+    public static List<PreGenRegion> getRegions(int centerX, int centerZ, int radius) {
         int x = 0;
         int y = 0;
         int dx = 0;

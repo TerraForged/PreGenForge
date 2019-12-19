@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import me.dags.pregen.command.PreGenCommand;
 import me.dags.pregen.pregenerator.PreGenConfig;
-import me.dags.pregen.pregenerator.PreGenerator;
+import me.dags.pregen.pregenerator.PreGenWorker;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.server.ServerWorld;
@@ -21,28 +21,36 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 @Mod("pregenforge")
 @Mod.EventBusSubscriber
 public class PreGenForge {
 
-    private static final Map<String, PreGenerator> generators = new HashMap<>();
-    private static Consumer<ITextComponent> messageSink = t -> {
-    };
+    private static final Map<String, PreGenWorker> generators = new HashMap<>();
+    private static final AtomicBoolean notifyPlayers = new AtomicBoolean(false);
+    private static Consumer<ITextComponent> messageSink = t -> {};
 
     @SubscribeEvent
     public static void starting(FMLServerStartingEvent event) {
-        messageSink = event.getServer()::sendMessage;
+        messageSink = t -> {
+            if (notifyPlayers.get()) {
+                event.getServer().getPlayerList().sendMessage(t, true);
+            } else {
+                event.getServer().sendMessage(t);
+            }
+        };
 
         event.getCommandDispatcher().register(PreGenCommand.command());
 
-        for (ServerWorld worldServer : event.getServer().getWorlds()) {
-            File file = getConfigFile(worldServer);
+        for (ServerWorld world : event.getServer().getWorlds()) {
+            File file = getConfigFile(world);
             if (file.exists()) {
                 try {
                     PreGenConfig config = loadConfig(file);
-                    createGenerator(worldServer, config).start();
+                    PreGenWorker worker = createGenerator(world, config);
+                    worker.start();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -55,6 +63,15 @@ public class PreGenForge {
         for (ServerWorld worldServer : event.getServer().getWorlds()) {
             pauseGenerator(worldServer);
         }
+    }
+
+    public static boolean setPlayerNotifications(boolean value) {
+        boolean previous = notifyPlayers.getAndSet(value);
+        return previous != value;
+    }
+
+    public static ITextComponent format(String format, Object... args) {
+        return new StringTextComponent("[PreGen] " + String.format(format, args));
     }
 
     public static void printf(String format, Object... args) {
@@ -71,27 +88,27 @@ public class PreGenForge {
         messageSink.accept(message);
     }
 
-    public static Optional<PreGenerator> getPreGenerator(ServerWorld server) {
+    public static Optional<PreGenWorker> getPreGenerator(ServerWorld server) {
         return Optional.ofNullable(generators.get(server.getWorldInfo().getWorldName()));
     }
 
-    public static PreGenerator createGenerator(ServerWorld worldServer, PreGenConfig config) {
-        cancelGenerator(worldServer);
-        PreGenerator generator = new PreGenerator(worldServer, config);
-        generators.put(worldServer.getWorldInfo().getWorldName(), generator);
+    public static PreGenWorker createGenerator(ServerWorld world, PreGenConfig config) {
+        cancelGenerator(world);
+        PreGenWorker generator = new PreGenWorker(world, config);
+        generators.put(world.getWorldInfo().getWorldName(), generator);
         return generator;
     }
 
-    public static void startGenerator(ServerWorld worldServer) {
-        getPreGenerator(worldServer).ifPresent(PreGenerator::start);
+    public static void startGenerator(ServerWorld world) {
+        getPreGenerator(world).ifPresent(PreGenWorker::start);
     }
 
-    public static void pauseGenerator(ServerWorld worldServer) {
-        getPreGenerator(worldServer).ifPresent(PreGenerator::pause);
+    public static void pauseGenerator(ServerWorld world) {
+        getPreGenerator(world).ifPresent(PreGenWorker::pause);
     }
 
-    public static void cancelGenerator(ServerWorld worldServer) {
-        getPreGenerator(worldServer).ifPresent(gen -> {
+    public static void cancelGenerator(ServerWorld world) {
+        getPreGenerator(world).ifPresent(gen -> {
             gen.cancel();
             generators.remove(gen.getName());
         });

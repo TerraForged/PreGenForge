@@ -1,17 +1,20 @@
 package me.dags.pregen.command;
 
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import me.dags.pregen.PreGenForge;
 import me.dags.pregen.pregenerator.PreGenConfig;
 import me.dags.pregen.pregenerator.PreGenRegion;
-import me.dags.pregen.pregenerator.PreGenerator;
+import me.dags.pregen.pregenerator.PreGenWorker;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.command.arguments.Vec2Argument;
 import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
@@ -26,9 +29,9 @@ public class PreGenCommand {
                 .then(Commands.literal("pause").executes(PreGenCommand::pause))
                 .then(Commands.literal("resume").executes(PreGenCommand::resume))
                 .then(Commands.literal("cancel").executes(PreGenCommand::cancel))
-                .then(Commands.literal("limit")
-                        .then(Commands.argument("limit", IntegerArgumentType.integer(1, 100))
-                                .executes(PreGenCommand::limit)))
+                .then(Commands.literal("notify")
+                        .then(Commands.argument("state", BoolArgumentType.bool()))
+                            .executes(PreGenCommand::notify))
                 .then(Commands.literal("start")
                         .then(Commands.argument("center", Vec2Argument.vec2())
                                 .then(Commands.argument("radius", IntegerArgumentType.integer(1))
@@ -40,7 +43,10 @@ public class PreGenCommand {
                                                 .executes(PreGenCommand::expand)))))
                 .then(Commands.literal("region")
                         .then(Commands.argument("position", Vec2Argument.vec2())
-                            .executes(PreGenCommand::startRegion)));
+                            .executes(PreGenCommand::startRegion)))
+                .then(Commands.literal("time")
+                        .then(Commands.argument("ticks", LongArgumentType.longArg(-1))
+                            .executes(PreGenCommand::time)));
     }
 
     private static Predicate<CommandSource> predicate() {
@@ -56,25 +62,40 @@ public class PreGenCommand {
     private static int resume(CommandContext<CommandSource> context) {
         ServerWorld worldServer = context.getSource().getWorld();
         PreGenForge.startGenerator(worldServer);
+        send(context.getSource(), "Pregenerator resumed");
         return 0;
     }
 
     private static int pause(CommandContext<CommandSource> context) {
         ServerWorld worldServer = context.getSource().getWorld();
         PreGenForge.pauseGenerator(worldServer);
+        send(context.getSource(), "Pregenerator paused");
         return 0;
     }
 
     private static int cancel(CommandContext<CommandSource> context) {
         ServerWorld worldServer = context.getSource().getWorld();
         PreGenForge.cancelGenerator(worldServer);
+        send(context.getSource(), "Pregenerator cancelled");
         return 0;
     }
 
-    private static int limit(CommandContext<CommandSource> context) {
-        int limit = IntegerArgumentType.getInteger(context, "limit");
+    private static int notify(CommandContext<CommandSource> context) {
+        boolean state = BoolArgumentType.getBool(context, "notify");
+        boolean result = PreGenForge.setPlayerNotifications(state);
+        String name = state ? "enabled" : "disabled";
+        String format = result ? "Player notifications: %s" : "Player notifications already: %s";
+        ITextComponent message = PreGenForge.format(format, name);
+        context.getSource().sendFeedback(message, true);
+        return 0;
+    }
+
+    private static int time(CommandContext<CommandSource> context) {
+        long ticks = LongArgumentType.getLong(context, "ticks");
         ServerWorld worldServer = context.getSource().getWorld();
-        PreGenForge.getPreGenerator(worldServer).ifPresent(preGenerator -> preGenerator.setLimit(limit));
+        worldServer.setGameTime(ticks);
+        worldServer.setDayTime(ticks);
+        send(context.getSource(), "Set world & game time: %s", ticks);
         return 0;
     }
 
@@ -87,11 +108,13 @@ public class PreGenCommand {
         int regionX = PreGenRegion.blockToRegion((int) center.x);
         int regionZ = PreGenRegion.blockToRegion((int) center.y);
         int regionRadius = PreGenRegion.chunkToRegion(radius);
-
-        ServerWorld world = context.getSource().getServer().getWorld(DimensionType.OVERWORLD);
         PreGenConfig config = new PreGenConfig(regionX, regionZ, regionRadius);
-        PreGenerator generator = PreGenForge.createGenerator(world, config);
-        generator.start();
+        ServerWorld world = context.getSource().getServer().getWorld(DimensionType.OVERWORLD);
+
+        PreGenWorker worker = PreGenForge.createGenerator(world, config);
+        worker.start();
+
+        send(context.getSource(), "Pregenerator started");
 
         return 0;
     }
@@ -109,13 +132,14 @@ public class PreGenCommand {
         int regionOuterRadius = PreGenRegion.chunkToRegion(outerRadius);
         int regionStart = (1 + regionInnerRadius * 2) * (1 + regionInnerRadius * 2);
 
+        ServerWorld world = context.getSource().getServer().getWorld(DimensionType.OVERWORLD);
         PreGenConfig config = new PreGenConfig(regionX, regionZ, Math.max(regionInnerRadius + 1, regionOuterRadius));
         config.setRegionIndex(regionStart);
 
-        ServerWorld world = context.getSource().getServer().getWorld(DimensionType.OVERWORLD);
-        PreGenerator generator = PreGenForge.createGenerator(world, config);
-        generator.start();
+        PreGenWorker worker = PreGenForge.createGenerator(world, config);
+        worker.start();
 
+        send(context.getSource(), "Pregenerator started");
         return 0;
     }
 
@@ -126,9 +150,26 @@ public class PreGenCommand {
 
         PreGenConfig config = new PreGenConfig(regionX, regionZ, 1);
         ServerWorld world = context.getSource().getServer().getWorld(DimensionType.OVERWORLD);
-        PreGenerator generator = PreGenForge.createGenerator(world, config);
-        generator.start();
+        PreGenWorker worker = PreGenForge.createGenerator(world, config);
+        worker.start();
 
+        send(context.getSource(), "Pregenerator started");
         return 0;
+    }
+
+    private static void send(CommandSource source, String message, Object... args) {
+        try {
+            source.asPlayer();
+            source.sendFeedback(PreGenForge.format(message, args), true);
+        } catch (CommandSyntaxException ignored) {
+
+        }
+    }
+
+    private static int chunkRadiusToBlockDiam(int radius) {
+        int regionRad = radius >> 5;
+        int regionDiam = regionRad + 1 + regionRad;
+        int chunkDiam = regionDiam << 5;
+        return chunkDiam << 4;
     }
 }
