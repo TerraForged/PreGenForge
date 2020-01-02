@@ -17,6 +17,7 @@ public class PreGenForgeMod {
         event.getCommandDispatcher().register(PreGenCommand.command());
 
         // initialize pregen with the mc server and a task scheduler implementation
+        // non-forge platforms may wish to use 'me.dags.pregen.task.WorldTaskScheduler.INSTANCE' (tick methods need "wiring up")
         PreGen.init(event.getServer(), new ForgeTaskScheduler());
 
         // startup handles loading of saved pregen configs
