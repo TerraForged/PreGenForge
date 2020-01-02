@@ -1,4 +1,4 @@
-package me.dags.pregen;
+package me.dags.pregen.forge;
 
 
 import net.minecraft.server.ServerPropertiesProvider;
@@ -16,8 +16,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ThreadPoolExecutor;
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ServerPropertiesFixer {
@@ -38,10 +36,10 @@ public class ServerPropertiesFixer {
             Properties properties = loadProperties(serverPath);
 
             if (overrides.isEmpty()) {
-                overrides.setProperty("level-type", properties.getProperty("level-type"));
-                overrides.setProperty("max-tick-time", properties.getProperty("max-tick-time"));
+                overrides.setProperty("example-property", "0");
                 saveProperties(overrides, overridesPath);
             } else {
+                overrides.remove("example-property");
                 properties.putAll(overrides);
             }
 

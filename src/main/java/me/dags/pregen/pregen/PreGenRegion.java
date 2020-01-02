@@ -1,4 +1,4 @@
-package me.dags.pregen.pregenerator;
+package me.dags.pregen.pregen;
 
 import net.minecraft.util.math.ChunkPos;
 

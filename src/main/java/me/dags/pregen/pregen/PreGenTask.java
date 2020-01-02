@@ -1,22 +1,26 @@
-package me.dags.pregen.pregenerator;
+package me.dags.pregen.pregen;
 
 import com.google.common.base.Stopwatch;
-import me.dags.pregen.PreGenForge;
+import me.dags.pregen.IO;
+import me.dags.pregen.Log;
+import me.dags.pregen.PreGen;
+import me.dags.pregen.task.Task;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.common.WorldWorkerManager;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class PreGenWorker implements WorldWorkerManager.IWorker {
+public class PreGenTask implements Task {
 
     private static final long STATS_INTERVAL = 30;
     private static final long CLEANUP_INTERVAL = 60 * 3;
 
     private final int chunkCount;
+    private final String name;
     private final ServerWorld world;
     private final PreGenConfig config;
     private final Iterator<PreGenRegion> regions;
@@ -30,16 +34,17 @@ public class PreGenWorker implements WorldWorkerManager.IWorker {
     private boolean stopped = true;
     private PreGenRegion.ChunkIterator chunkIterator = null;
 
-    public PreGenWorker(ServerWorld world, PreGenConfig config) {
+    public PreGenTask(ServerWorld world, PreGenConfig config) {
         List<PreGenRegion> regions = config.getRegions();
         this.config = config;
         this.world = world;
+        this.name = getName(world);
         this.regions = regions.iterator();
         this.chunkCount = (PreGenRegion.SIZE * PreGenRegion.SIZE * regions.size()) - (config.getChunkIndex() + 1);
     }
 
     public String getName() {
-        return world.getWorldInfo().getWorldName();
+        return name;
     }
 
     public boolean start() {
@@ -47,8 +52,8 @@ public class PreGenWorker implements WorldWorkerManager.IWorker {
             stopped = false;
             statsTimer.reset().start();
             cleanupTimer.reset().start();
-            WorldWorkerManager.addWorker(this);
-            PreGenForge.printf("Started in world: %s", getName());
+            PreGen.getInstance().getScheduler().submit(this);
+            Log.printf("(%s) Started", name);
             return true;
         }
         return false;
@@ -59,8 +64,8 @@ public class PreGenWorker implements WorldWorkerManager.IWorker {
             stopped = true;
             statsTimer.stop().reset();
             cleanupTimer.stop().reset();
-            PreGenForge.savePreGenerator(world, config);
-            PreGenForge.printf("Paused for world: %s", getName());
+            IO.saveConfig(config, world);
+            Log.printf("(%s) Paused", name);
             return true;
         }
         return false;
@@ -68,20 +73,20 @@ public class PreGenWorker implements WorldWorkerManager.IWorker {
 
     public boolean cancel() {
         stopped = true;
-        if (PreGenForge.deletePreGenerator(world)) {
-            PreGenForge.printf("Removed for world: %s", getName());
+        if (IO.deleteConfig(world)) {
+            Log.printf("(%s) Disposed", name);
         }
         return true;
     }
 
     @Override
-    public boolean hasWork() {
+    public boolean isComplete() {
         if (stopped) {
-            return false;
+            return true;
         }
         if (chunkIterator == null || !chunkIterator.hasNext()) {
             if (!regions.hasNext()) {
-                return false;
+                return true;
             }
             PreGenRegion region = regions.next();
             config.setRegionIndex(config.getRegionIndex() + 1);
@@ -89,15 +94,15 @@ public class PreGenWorker implements WorldWorkerManager.IWorker {
             int chunkIndex = chunkIterator == null ? config.getChunkIndex() : -1;
             chunkIterator = region.iterator(chunkIndex);
         }
-        return chunkIterator.hasNext();
+        return !chunkIterator.hasNext();
     }
 
     @Override
-    public boolean doWork() {
+    public boolean perform() {
         // print progress stats every X seconds
         if (shouldPrintStats()) {
             printStats();
-            PreGenForge.savePreGenerator(world, config);
+            IO.saveConfig(config, world);
             statsTimer.reset().start();
         }
 
@@ -110,12 +115,12 @@ public class PreGenWorker implements WorldWorkerManager.IWorker {
             statsTimer.start();
         }
 
-        if (hasWork()) {
+        if (!isComplete()) {
             ChunkPos pos = chunkIterator.next();
             world.getChunkProvider().getChunk(pos.x, pos.z, ChunkStatus.FULL, true);
             chunks++;
-            if (!hasWork()) {
-                PreGenForge.print("Complete!");
+            if (isComplete()) {
+                Log.printf("(%s) Complete!", name);
                 cancel();
                 return false;
             }
@@ -153,7 +158,7 @@ public class PreGenWorker implements WorldWorkerManager.IWorker {
         float prog = getProgress();
         float rate = getRate();
         String eta = getETA(rate);
-        PreGenForge.printf("Progress: %.2f%%, Chunks: %s/%s (%.2f/sec), ETA: %s", prog, chunks, chunkCount, rate, eta);
+        Log.printf("(%s) Progress: %.2f%%, Chunks: %s/%s (%.2f/sec), ETA: %s", name, prog, chunks, chunkCount, rate, eta);
     }
 
     private int getProgressStep(int steps) {
@@ -177,5 +182,14 @@ public class PreGenWorker implements WorldWorkerManager.IWorker {
         long mins = (time - (hrs * 3600)) / 60;
         long secs = time - (hrs * 3600) - (mins * 60);
         return String.format("%sh:%sm:%ss", hrs, mins, secs);
+    }
+
+    public static String getName(ServerWorld world) {
+        String name = world.getWorldInfo().getWorldName();
+        ResourceLocation dim = world.getDimension().getType().getRegistryName();
+        if (dim == null) {
+            return name;
+        }
+        return name + ":" + dim.getPath();
     }
 }
