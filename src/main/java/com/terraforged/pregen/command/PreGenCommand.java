@@ -1,4 +1,4 @@
-package me.dags.pregen.command;
+package com.terraforged.pregen.command;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.BoolArgumentType;
@@ -7,11 +7,11 @@ import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import me.dags.pregen.Log;
-import me.dags.pregen.PreGen;
-import me.dags.pregen.pregen.PreGenConfig;
-import me.dags.pregen.pregen.PreGenRegion;
-import me.dags.pregen.pregen.PreGenTask;
+import com.terraforged.pregen.Log;
+import com.terraforged.pregen.PreGen;
+import com.terraforged.pregen.pregen.PreGenConfig;
+import com.terraforged.pregen.pregen.PreGenRegion;
+import com.terraforged.pregen.pregen.PreGenTask;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.Commands;
 import net.minecraft.command.arguments.DimensionArgument;

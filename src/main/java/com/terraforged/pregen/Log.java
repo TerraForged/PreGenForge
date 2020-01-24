@@ -1,4 +1,4 @@
-package me.dags.pregen;
+package com.terraforged.pregen;
 
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;

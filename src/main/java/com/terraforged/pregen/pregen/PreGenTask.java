@@ -1,10 +1,10 @@
-package me.dags.pregen.pregen;
+package com.terraforged.pregen.pregen;
 
 import com.google.common.base.Stopwatch;
-import me.dags.pregen.IO;
-import me.dags.pregen.Log;
-import me.dags.pregen.PreGen;
-import me.dags.pregen.task.Task;
+import com.terraforged.pregen.IO;
+import com.terraforged.pregen.Log;
+import com.terraforged.pregen.PreGen;
+import com.terraforged.pregen.task.Task;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.ChunkStatus;

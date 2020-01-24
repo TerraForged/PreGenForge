@@ -1,8 +1,8 @@
-package me.dags.pregen.forge;
+package com.terraforged.pregen.forge;
 
-import me.dags.pregen.task.Task;
-import me.dags.pregen.task.TaskQueue;
-import me.dags.pregen.task.TaskScheduler;
+import com.terraforged.pregen.task.Task;
+import com.terraforged.pregen.task.TaskQueue;
+import com.terraforged.pregen.task.TaskScheduler;
 import net.minecraftforge.common.WorldWorkerManager;
 
 /**

@@ -1,7 +1,7 @@
-package me.dags.pregen.forge;
+package com.terraforged.pregen.forge;
 
-import me.dags.pregen.PreGen;
-import me.dags.pregen.command.PreGenCommand;
+import com.terraforged.pregen.PreGen;
+import com.terraforged.pregen.command.PreGenCommand;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.server.FMLServerStartingEvent;

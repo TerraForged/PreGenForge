@@ -1,9 +1,9 @@
-package me.dags.pregen;
+package com.terraforged.pregen;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import me.dags.pregen.pregen.PreGenConfig;
+import com.terraforged.pregen.pregen.PreGenConfig;
 import net.minecraft.world.server.ServerWorld;
 
 import java.io.File;

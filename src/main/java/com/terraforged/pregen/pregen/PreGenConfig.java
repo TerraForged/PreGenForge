@@ -1,4 +1,4 @@
-package me.dags.pregen.pregen;
+package com.terraforged.pregen.pregen;
 
 import com.google.gson.JsonObject;
 

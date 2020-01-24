@@ -1,8 +1,8 @@
-package me.dags.pregen;
+package com.terraforged.pregen;
 
-import me.dags.pregen.pregen.PreGenConfig;
-import me.dags.pregen.pregen.PreGenTask;
-import me.dags.pregen.task.TaskScheduler;
+import com.terraforged.pregen.pregen.PreGenConfig;
+import com.terraforged.pregen.pregen.PreGenTask;
+import com.terraforged.pregen.task.TaskScheduler;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.server.ServerWorld;

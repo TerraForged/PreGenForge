@@ -1,4 +1,4 @@
-package me.dags.pregen.task;
+package com.terraforged.pregen.task;
 
 import java.util.ArrayList;
 import java.util.List;

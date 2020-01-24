@@ -1,4 +1,4 @@
-package me.dags.pregen.forge;
+package com.terraforged.pregen.forge;
 
 
 import net.minecraft.server.ServerPropertiesProvider;

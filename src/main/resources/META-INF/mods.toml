@@ -1,6 +1,6 @@
 modLoader="javafml"
-loaderVersion="[25,)"
-issueTrackerURL="https://github.com/dags-/PreGenForge/issues"
+loaderVersion="[31,)"
+issueTrackerURL="https://github.com/TerraForged/PreGenForge/issues"
 [[mods]]
     displayName="PreGenForge"
     modId="pregenforge"

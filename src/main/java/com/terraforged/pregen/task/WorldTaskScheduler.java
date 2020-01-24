@@ -1,4 +1,4 @@
-package me.dags.pregen.task;
+package com.terraforged.pregen.task;
 
 // Tweaked version of forge's
 // https://github.com/MinecraftForge/MinecraftForge/blob/1.15.x/src/main/java/net/minecraftforge/common/WorldWorkerManager.java

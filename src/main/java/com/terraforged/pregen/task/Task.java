@@ -1,4 +1,4 @@
-package me.dags.pregen.task;
+package com.terraforged.pregen.task;
 
 public interface Task {
 
