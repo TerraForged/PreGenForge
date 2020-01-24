@@ -89,6 +89,7 @@ public class PreGenTask implements Task {
                 return true;
             }
             PreGenRegion region = regions.next();
+            // record the next region index so we can start there after a restart
             config.setRegionIndex(config.getRegionIndex() + 1);
 
             int chunkIndex = chunkIterator == null ? config.getChunkIndex() : -1;
@@ -117,6 +118,10 @@ public class PreGenTask implements Task {
 
         if (!isComplete()) {
             ChunkPos pos = chunkIterator.next();
+            // record the next chunk index so we can start there after a restart
+            config.setChunkIndex(chunkIterator.index() + 1);
+
+            // bool flag must be true as this tells the chunk provider to generate the chunk if it doesn't exist
             world.getChunkProvider().getChunk(pos.x, pos.z, ChunkStatus.FULL, true);
             chunks++;
             if (isComplete()) {

@@ -11,7 +11,6 @@ public class PreGenConfig {
     private final int z;
     private final int radius;
 
-    private int limit = 40;
     private int regionIndex = 0;
     private int chunkIndex = PreGenRegion.ITERATOR_INDEX;
 
@@ -25,7 +24,6 @@ public class PreGenConfig {
         x = root.get("x").getAsInt();
         z = root.get("z").getAsInt();
         radius = root.get("radius").getAsInt();
-        limit = root.get("limit").getAsInt();
         regionIndex = root.get("region").getAsInt();
         chunkIndex = root.get("chunk").getAsInt();
     }
@@ -36,10 +34,6 @@ public class PreGenConfig {
 
     public int getChunkIndex() {
         return chunkIndex;
-    }
-
-    public int getLimit() {
-        return limit;
     }
 
     public boolean isValid() {
@@ -59,16 +53,11 @@ public class PreGenConfig {
         chunkIndex = index;
     }
 
-    public void setLimit(int limit) {
-        this.limit = limit;
-    }
-
     public JsonObject toJson() {
         JsonObject root = new JsonObject();
         root.addProperty("x", x);
         root.addProperty("z", z);
         root.addProperty("radius", radius);
-        root.addProperty("limit", limit);
         root.addProperty("region", regionIndex);
         root.addProperty("chunk", chunkIndex);
         return root;
@@ -82,6 +71,8 @@ public class PreGenConfig {
         int size = radius + 1 + radius;
         int max = size * size;
         List<PreGenRegion> regions = new ArrayList<>(max);
+
+        // iterates through the regions starting at centerX/Z, spiralling outwards to the radius
         for(int i = 0; i < max; i++){
             if ((-radius <= x) && (x <= radius) && (-radius <= y) && (y <= radius)){
                 int regionX = centerX + x;
