@@ -1,10 +1,6 @@
 # PreGenForge
 Forge chunk pregenerator
 
-##### Notes
- - it's **not** a good idea to run pregeneration on a live/production server
- - it's a good idea to set the server's `max-tick-time` property to `-1` when running pregeneration
-
 ## Commands
 
 #### Start
