@@ -50,9 +50,7 @@ public class PreGen {
         boolean change = previous != state;
         String name = state ? "enabled" : "disabled";
         String format = change ? "Player notifications: %s" : "Player notifications already: %s";
-        String message = String.format(format, name);
-        Log.print(message);
-        return message;
+        return String.format(format, name);
     }
 
     public Optional<PreGenTask> getTask(ServerWorld server) {
