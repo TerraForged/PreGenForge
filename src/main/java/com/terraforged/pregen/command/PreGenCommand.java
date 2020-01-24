@@ -96,7 +96,7 @@ public class PreGenCommand {
     private static int notify(CommandContext<CommandSource> context) {
         boolean state = BoolArgumentType.getBool(context, "state");
         String response = PreGen.getInstance().setPlayerNotifications(state);
-        CommandUtils.send(context.getSource(), response);
+        CommandUtils.sendToAny(context.getSource(), response);
         return Command.SINGLE_SUCCESS;
     }
 

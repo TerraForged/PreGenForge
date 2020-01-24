@@ -29,6 +29,11 @@ public class CommandUtils {
         }
     }
 
+
+    public static void sendToAny(CommandSource source, String message, Object... args) {
+        source.sendFeedback(Log.format(message, args), true);
+    }
+
     public static boolean hasPermission(CommandSource source) {
         if (!source.hasPermissionLevel(PERMISSION_LEVEL)) {
             source.sendErrorMessage(new StringTextComponent("No permission"));
