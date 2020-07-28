@@ -7,6 +7,8 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.terraforged.pregen.Log;
 import net.minecraft.command.CommandSource;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
@@ -29,7 +31,6 @@ public class CommandUtils {
         }
     }
 
-
     public static void sendToAny(CommandSource source, String message, Object... args) {
         source.sendFeedback(Log.format(message, args), true);
     }
@@ -40,6 +41,15 @@ public class CommandUtils {
             return false;
         }
         return true;
+    }
+
+    public static Vec2f getCenter(CommandContext<CommandSource> context, ServerWorld world) {
+        try {
+            return context.getArgument("center", Vec2f.class);
+        } catch (Throwable t) {
+            BlockPos pos = world.getSpawnPoint();
+            return new Vec2f(pos.getX(), pos.getZ());
+        }
     }
 
     public static ServerWorld getWorld(CommandContext<CommandSource> context) throws CommandSyntaxException {

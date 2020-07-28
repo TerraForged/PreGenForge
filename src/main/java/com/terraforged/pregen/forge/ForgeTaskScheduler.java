@@ -1,5 +1,6 @@
 package com.terraforged.pregen.forge;
 
+import com.terraforged.pregen.Log;
 import com.terraforged.pregen.task.Task;
 import com.terraforged.pregen.task.TaskQueue;
 import com.terraforged.pregen.task.TaskScheduler;
@@ -42,6 +43,7 @@ public class ForgeTaskScheduler implements TaskScheduler, WorldWorkerManager.IWo
 
     @Override
     public synchronized void submit(Task task) {
+        Log.printf("[Forge Scheduler] Submitting task: %s", task.getName());
         scheduler.add(task);
     }
 

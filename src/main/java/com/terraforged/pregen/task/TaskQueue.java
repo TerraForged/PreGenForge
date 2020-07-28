@@ -10,6 +10,11 @@ public class TaskQueue implements Task {
     private int index = -1;
 
     @Override
+    public String getName() {
+        return "TaskQueue";
+    }
+
+    @Override
     public boolean isComplete() {
         return tasks.isEmpty();
     }

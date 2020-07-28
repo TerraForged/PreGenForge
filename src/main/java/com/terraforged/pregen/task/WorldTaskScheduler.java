@@ -1,5 +1,7 @@
 package com.terraforged.pregen.task;
 
+import com.terraforged.pregen.Log;
+
 // Tweaked version of forge's
 // https://github.com/MinecraftForge/MinecraftForge/blob/1.15.x/src/main/java/net/minecraftforge/common/WorldWorkerManager.java
 public class WorldTaskScheduler implements TaskScheduler {
@@ -42,6 +44,7 @@ public class WorldTaskScheduler implements TaskScheduler {
 
     @Override
     public synchronized void submit(Task task) {
+        Log.printf("[World Scheduler] Submitting task: %s", task.getName());
         taskQueue.add(task);
     }
 }
