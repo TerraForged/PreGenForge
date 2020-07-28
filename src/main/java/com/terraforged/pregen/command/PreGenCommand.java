@@ -82,7 +82,7 @@ public class PreGenCommand {
                                 .then(Commands.argument("innerRadius", IntegerArgumentType.integer())
                                         .then(Commands.argument("outerRadius", IntegerArgumentType.integer())
                                                 .executes(PreGenCommand::expand))))));
-        // pregen expand <x> <z> <inner> <outer>
+        // pregen expand <diM> <x> <z> <inner> <outer>
         dispatcher.register(Commands.literal("pregen")
                 .then(Commands.literal("expand")
                         .requires(CommandUtils.PERMISSION)
