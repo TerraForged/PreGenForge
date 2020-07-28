@@ -4,51 +4,50 @@ Forge chunk pregenerator
 ## Commands
 
 #### Start
-Start a new pregenerator centered on `(centerX,centreZ)` with the given chunk `radius`
-```
-/pregen start <centreX> <centreZ> <radius>
-```
 
-Arguments:
-- centreX/centreZ - the centre block position to generate chunks around
-- radius - the radius in chunks to generate
+Starts a standard pregenerator which generates an area of chunks.
+
+Note - The radius is in **chunks**. The total length of one side of the generated area will be roughly **`2 x <radius>`**
+
+- `/pregen start <radius>` - start a pregenerator centered on the world spawn
+- `/pregen start <dimension> <radius>` - start a pregenerator centered on the world spawn in the given dimension
+- `/pregen start <x> <z> <radius>` - start a pregenerator centered on the x,z coordinates
+- `/pregen start <dimension> <x> <z> <radius>` - start a pregenerator centered on the x,z coordinates in the given dimension
 
 #### Expand
-Starts a new pregenerator centered on `(centerX,centreZ)` expanding from the given `startRadius` outwards to the
- given `endRadius`
-```
-/pregen expand <centreX> <centreZ> <startRadius> <endRadius>
-```
 
-Arguments:
-- centreX/centreZ - the centre block position to generate chunks around
-- startRadius - the radius in chunks at which the generator should start
-- endRadius - the radius in chunks at which the generator should finish
+Starts a pregenerator but skips an inner-radius of chunks - this is useful if you have already generated an area of
+chunks and don't want to waste resources loading those chunks from disk into memory.
 
+Note - Radii are in **chunks**.
 
+- `/pregen expand <inner_radius> <outer_radius>` - start an 'expand' pregenerator centered on the world spawn
+- `/pregen expand <dimension> <inner_radius> <outer_radius>` - start an 'expand' pregenerator centered on the world
+ spawn in the given dimension
+- `/pregen expand <x> <z> <inner_radius> <outer_radius>` - start an 'expand' pregenerator centered on the x,z coordinates
+- `/pregen expand <dimension> <x> <z> <inner_radius> <outer_radius>` - start an 'expand' pregenerator centered on the
+ x,z coordinates in the given dimension
+ 
 #### Pause
-Pause a running pregenerator
-```
-/pregen pause
-```
 
+Temporarily pause/unpause a pregenerator.
 
-#### Resume
-Resume a paused pregenerator
-```
-/pregen resume
-```
+Note - paused pregenerators will start automatically the next time the server starts
 
+- `/pregen pause` - pause the pregenerator until unpaused
+- `/pregen resume` - unpause a paused pregenerator
 
 #### Cancel
-Stop and delete a pregenerator
-```
-/pregen cancel
-```
 
-## Utilities
+`/pregen cancel` - stop and remove a pregenerator
 
-#### Server Property Fixer
-There's a weird bug with forge?/vanilla where certain server settings (in the `server.properties` file) get reset to
- defaults each time the server starts. This mod includes a way to work around this issue. Simply create a file called
- `overrides.properties` in your server root directory and add any standard server properties you like in there.
+#### Notify
+
+`/pregen` notify <true | false> - toggle pregeneration status & progress messages
+
+#### Time
+
+It might be desirable to reset the world & game time after pregenerating, as it can take a while depending on
+ how large an area is being generated.
+
+`/pregen time <ticks> <dimension>` - set the world and game time (in ticks) in the given dimension
