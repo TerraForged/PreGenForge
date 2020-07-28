@@ -12,7 +12,7 @@ public class PreGenConfig {
     private final int radius;
 
     private int regionIndex = 0;
-    private int chunkIndex = PreGenRegion.ITERATOR_INDEX;
+    private int chunkIndex = PreGenRegion.DEFAULT_INDEX;
 
     public PreGenConfig(int x, int z, int radius) {
         this.x = x;
@@ -61,6 +61,17 @@ public class PreGenConfig {
         root.addProperty("region", regionIndex);
         root.addProperty("chunk", chunkIndex);
         return root;
+    }
+
+    @Override
+    public String toString() {
+        return "PreGenConfig{" +
+                "x=" + x +
+                ", z=" + z +
+                ", radius=" + radius +
+                ", regionIndex=" + regionIndex +
+                ", chunkIndex=" + chunkIndex +
+                '}';
     }
 
     public static List<PreGenRegion> getRegions(int centerX, int centerZ, int radius) {

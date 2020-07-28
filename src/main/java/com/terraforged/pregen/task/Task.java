@@ -2,6 +2,8 @@ package com.terraforged.pregen.task;
 
 public interface Task {
 
+    String getName();
+
     // whether the task has finished or not
     boolean isComplete();
 

@@ -7,32 +7,38 @@ import com.terraforged.pregen.PreGen;
 import com.terraforged.pregen.task.Task;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.chunk.ChunkStatus;
+import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerWorld;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class PreGenTask implements Task {
 
-    private static final long STATS_INTERVAL = 30;
-    private static final long CLEANUP_INTERVAL = 60 * 3;
+    protected static final long STATS_INTERVAL = 30;
+    protected static final long CLEANUP_INTERVAL = 60 * 3;
 
-    private final int chunkCount;
-    private final String name;
-    private final ServerWorld world;
-    private final PreGenConfig config;
-    private final Iterator<PreGenRegion> regions;
+    protected final int chunkCount;
+    protected final String name;
+    protected final ServerWorld world;
+    protected final PreGenConfig config;
+    protected final Iterator<PreGenRegion> regions;
+    protected final LinkedList<ChunkPos> queue = new LinkedList<>();
 
-    private final Stopwatch statsTimer = Stopwatch.createUnstarted();
-    private final Stopwatch cleanupTimer = Stopwatch.createUnstarted();
+    protected final Stopwatch statsTimer = Stopwatch.createUnstarted();
+    protected final Stopwatch cleanupTimer = Stopwatch.createUnstarted();
 
-    private long chunks = 0;
-    private long prevChunks = 0;
-    private int prevProgress = 0;
-    private boolean stopped = true;
-    private PreGenRegion.ChunkIterator chunkIterator = null;
+    protected long chunks = 0;
+    protected long prevChunks = 0;
+    protected int prevProgress = 0;
+    protected boolean stopped = true;
+
+    protected long rateCount = 0L;
+    protected double totalRate = 0D;
+
+    protected PreGenRegion.ChunkIterator chunkIterator = null;
 
     public PreGenTask(ServerWorld world, PreGenConfig config) {
         List<PreGenRegion> regions = config.getRegions();
@@ -86,20 +92,37 @@ public class PreGenTask implements Task {
         }
         if (chunkIterator == null || !chunkIterator.hasNext()) {
             if (!regions.hasNext()) {
-                return true;
+                return queue.isEmpty();
             }
-            PreGenRegion region = regions.next();
-            // record the next region index so we can start there after a restart
-            config.setRegionIndex(config.getRegionIndex() + 1);
 
-            int chunkIndex = chunkIterator == null ? config.getChunkIndex() : -1;
-            chunkIterator = region.iterator(chunkIndex);
+            // chunkIterator is null on first run of the task, in which case get the index from the config
+            // so that generation can continue after restarts, otherwise use the default index
+            int chunkIndex = chunkIterator == null ? config.getChunkIndex() : PreGenRegion.DEFAULT_INDEX;
+
+            while (regions.hasNext()) {
+                PreGenRegion region = regions.next();
+                // record the next region index so we can start there after a restart
+                config.setRegionIndex(config.getRegionIndex() + 1);
+
+                chunkIterator = region.iterator(chunkIndex);
+
+                // false if the config was set at max-index
+                if (chunkIterator.hasNext()) {
+                    return false;
+                }
+
+                // try the next region at the start
+                chunkIndex = PreGenRegion.DEFAULT_INDEX;
+            }
         }
-        return !chunkIterator.hasNext();
+        // has finished generating if no more chunks & the work queue is empty
+        return !chunkIterator.hasNext() && queue.isEmpty();
     }
 
     @Override
     public boolean perform() {
+        PreGenTask.drive(world.getChunkProvider(), 50);
+
         // print progress stats every X seconds
         if (shouldPrintStats()) {
             printStats();
@@ -116,26 +139,43 @@ public class PreGenTask implements Task {
             statsTimer.start();
         }
 
-        if (!isComplete()) {
-            ChunkPos pos = chunkIterator.next();
-            // record the next chunk index so we can start there after a restart
-            config.setChunkIndex(chunkIterator.index() + 1);
-
-            // bool flag must be true as this tells the chunk provider to generate the chunk if it doesn't exist
-            world.getChunkProvider().getChunk(pos.x, pos.z, ChunkStatus.FULL, true);
-            chunks++;
+        if (!queue.isEmpty()) {
+            clearQueue();
             if (isComplete()) {
                 Log.printf("(%s) Complete!", name);
                 cancel();
                 return false;
             }
-            return true;
+            if (queue.size() > 50) {
+                return true;
+            }
         }
 
-        return false;
+        while (chunkIterator.hasNext()) {
+            ChunkPos pos = chunkIterator.next();
+            // record the next chunk index so we can start there after a restart
+            config.setChunkIndex(chunkIterator.index() + 1);
+
+            // bool flag must be true as this tells the chunk provider to generate the chunk if it doesn't exist
+            world.getChunkProvider().forceChunk(pos, true);
+            queue.add(pos);
+        }
+        return true;
     }
 
-    private void cleanUp() {
+    private void clearQueue() {
+        Iterator<ChunkPos> iterator = queue.iterator();
+        while (iterator.hasNext()) {
+            ChunkPos pos = iterator.next();
+            if (world.getChunkProvider().isChunkLoaded(pos)) {
+                chunks++;
+                iterator.remove();
+                world.forceChunk(pos.x, pos.z, false);
+            }
+        }
+    }
+
+    protected void cleanUp() {
         // force save the world, flushing enabled (suppressLog=false, flush=true, forced=true)
         world.getServer().save(false, true, true);
         // probably not necessary but run gc sweep
@@ -144,7 +184,7 @@ public class PreGenTask implements Task {
         cleanupTimer.reset().start();
     }
 
-    private boolean shouldPrintStats() {
+    protected boolean shouldPrintStats() {
         int progress = getProgressStep(10);
         if (progress - prevProgress > 10) {
             prevProgress = progress;
@@ -159,10 +199,11 @@ public class PreGenTask implements Task {
         return false;
     }
 
-    private void printStats() {
+    protected void printStats() {
         float prog = getProgress();
         float rate = getRate();
-        String eta = getETA(rate);
+        double average = getAverageRate(rate);
+        String eta = getETA(average);
         Log.printf("(%s) Progress: %.2f%%, Chunks: %s/%s (%.2f/sec), ETA: %s", name, prog, chunks, chunkCount, rate, eta);
     }
 
@@ -174,6 +215,12 @@ public class PreGenTask implements Task {
         return (chunks * 100F) / chunkCount;
     }
 
+    private double getAverageRate(float rate) {
+        totalRate += rate;
+        rateCount++;
+        return totalRate / rateCount;
+    }
+
     private float getRate() {
         float chunkDelta = chunks - prevChunks;
         float timeDelta = statsTimer.elapsed(TimeUnit.MILLISECONDS) / 1000F;
@@ -181,12 +228,24 @@ public class PreGenTask implements Task {
         return chunkDelta / timeDelta;
     }
 
-    private String getETA(float rate) {
+    private String getETA(double rate) {
         long time = Math.round((chunkCount - chunks) / rate);
         long hrs = time / 3600;
         long mins = (time - (hrs * 3600)) / 60;
         long secs = time - (hrs * 3600) - (mins * 60);
         return String.format("%sh:%sm:%ss", hrs, mins, secs);
+    }
+
+    protected static void drive(ServerChunkProvider provider, int count) {
+        while (count-- > 0) {
+            try {
+                if (!provider.driveOneTask()) {
+                    return;
+                }
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
     }
 
     public static String getName(ServerWorld world) {

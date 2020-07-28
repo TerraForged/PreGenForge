@@ -1,10 +1,10 @@
 package com.terraforged.pregen.command;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.terraforged.pregen.Log;
@@ -21,8 +21,80 @@ import net.minecraft.world.server.ServerWorld;
 
 public class PreGenCommand {
 
-    public static LiteralArgumentBuilder<CommandSource> command() {
-        return Commands.literal("pregen")
+    public static void register(CommandDispatcher<CommandSource> dispatcher) {
+        registerUtils(dispatcher);
+        registerStart(dispatcher);
+        registerExpand(dispatcher);
+    }
+
+    private static void registerStart(CommandDispatcher<CommandSource> dispatcher) {
+        // pregen start <radius>
+        dispatcher.register(Commands.literal("pregen")
+                .then(Commands.literal("start")
+                        .requires(CommandUtils.PERMISSION)
+                        .then(Commands.argument("radius", IntegerArgumentType.integer())
+                                .executes(PreGenCommand::start))));
+        // pregen start <dim> <radius>
+        dispatcher.register(Commands.literal("pregen")
+                .then(Commands.literal("start")
+                        .requires(CommandUtils.PERMISSION)
+                        .then(Commands.argument("dimension", DimensionArgument.getDimension())
+                                .then(Commands.argument("radius", IntegerArgumentType.integer())
+                                        .executes(PreGenCommand::start)))));
+        // pregen start <x> <z> <radius>
+        dispatcher.register(Commands.literal("pregen")
+                .then(Commands.literal("start")
+                        .requires(CommandUtils.PERMISSION)
+                        .then(Commands.argument("center", Vec2Argument.vec2())
+                                .then(Commands.argument("radius", IntegerArgumentType.integer())
+                                        .executes(PreGenCommand::start)))));
+        // pregen start <dim> <x> <z> <radius>
+        dispatcher.register(Commands.literal("pregen")
+                .then(Commands.literal("start")
+                        .requires(CommandUtils.PERMISSION)
+                        .then(Commands.argument("dimension", DimensionArgument.getDimension())
+                                .then(Commands.argument("center", Vec2Argument.vec2())
+                                        .then(Commands.argument("radius", IntegerArgumentType.integer())
+                                                .executes(PreGenCommand::start))))));
+    }
+
+    private static void registerExpand(CommandDispatcher<CommandSource> dispatcher) {
+        // pregen expand <inner> <outer>
+        dispatcher.register(Commands.literal("pregen")
+                .then(Commands.literal("expand")
+                        .requires(CommandUtils.PERMISSION)
+                        .then(Commands.argument("innerRadius", IntegerArgumentType.integer())
+                                .then(Commands.argument("outerRadius", IntegerArgumentType.integer())
+                                        .executes(PreGenCommand::expand)))));
+        // pregen expand <dim> <inner> <outer>
+        dispatcher.register(Commands.literal("pregen")
+                .then(Commands.literal("expand")
+                        .requires(CommandUtils.PERMISSION)
+                        .then(Commands.argument("dimension", DimensionArgument.getDimension())
+                                .then(Commands.argument("innerRadius", IntegerArgumentType.integer())
+                                        .then(Commands.argument("outerRadius", IntegerArgumentType.integer())
+                                                .executes(PreGenCommand::expand))))));
+        // pregen expand <x> <z> <inner> <outer>
+        dispatcher.register(Commands.literal("pregen")
+                .then(Commands.literal("expand")
+                        .requires(CommandUtils.PERMISSION)
+                        .then(Commands.argument("center", Vec2Argument.vec2())
+                                .then(Commands.argument("innerRadius", IntegerArgumentType.integer())
+                                        .then(Commands.argument("outerRadius", IntegerArgumentType.integer())
+                                                .executes(PreGenCommand::expand))))));
+        // pregen expand <x> <z> <inner> <outer>
+        dispatcher.register(Commands.literal("pregen")
+                .then(Commands.literal("expand")
+                        .requires(CommandUtils.PERMISSION)
+                        .then(Commands.argument("dimension", DimensionArgument.getDimension())
+                                .then(Commands.argument("center", Vec2Argument.vec2())
+                                        .then(Commands.argument("innerRadius", IntegerArgumentType.integer())
+                                                .then(Commands.argument("outerRadius", IntegerArgumentType.integer())
+                                                        .executes(PreGenCommand::expand)))))));
+    }
+
+    private static void registerUtils(CommandDispatcher<CommandSource> dispatcher) {
+        dispatcher.register(Commands.literal("pregen")
                 .requires(CommandUtils.PERMISSION)
                 // toggles progress notifications for players
                 .then(Commands.literal("notify")
@@ -43,21 +115,6 @@ public class PreGenCommand {
                         .then(Commands.argument("dimension", DimensionArgument.getDimension())
                                 .executes(PreGenCommand::cancel))
                         .executes(PreGenCommand::cancel))
-                // starts a new pregen task
-                .then(Commands.literal("start")
-                        .then(Commands.argument("center", Vec2Argument.vec2())
-                                .then(Commands.argument("radius", IntegerArgumentType.integer(1))
-                                        .then(Commands.argument("dimension", DimensionArgument.getDimension())
-                                                .executes(PreGenCommand::start))
-                                        .executes(PreGenCommand::start))))
-                // starts an 'expand' pregen task
-                .then(Commands.literal("expand")
-                        .then(Commands.argument("center", Vec2Argument.vec2())
-                                .then(Commands.argument("innerRadius", IntegerArgumentType.integer(1))
-                                        .then(Commands.argument("outerRadius", IntegerArgumentType.integer(1))
-                                                .then(Commands.argument("dimension", DimensionArgument.getDimension())
-                                                        .executes(PreGenCommand::expand))
-                                                .executes(PreGenCommand::expand)))))
                 // pregens a specific region
                 .then(Commands.literal("region")
                         .then(Commands.argument("position", Vec2Argument.vec2())
@@ -69,7 +126,7 @@ public class PreGenCommand {
                         .then(Commands.argument("ticks", LongArgumentType.longArg(-1))
                                 .then(Commands.argument("dimension", DimensionArgument.getDimension())
                                         .executes(PreGenCommand::time))
-                                .executes(PreGenCommand::time)));
+                                .executes(PreGenCommand::time))));
     }
 
     private static int resume(CommandContext<CommandSource> context) throws CommandSyntaxException {
@@ -111,28 +168,24 @@ public class PreGenCommand {
 
     private static int start(CommandContext<CommandSource> context) throws CommandSyntaxException {
         Log.print(context.getInput());
-
-        Vec2f center = Vec2Argument.getVec2f(context, "center");
-        int radius = IntegerArgumentType.getInteger(context, "radius");
         ServerWorld world = CommandUtils.getWorld(context);
-
+        Vec2f center = CommandUtils.getCenter(context, world);
+        int radius = IntegerArgumentType.getInteger(context, "radius");
         int regionX = PreGenRegion.blockToRegion((int) center.x);
         int regionZ = PreGenRegion.blockToRegion((int) center.y);
         int regionRadius = PreGenRegion.chunkToRegion(radius);
         PreGenConfig config = new PreGenConfig(regionX, regionZ, regionRadius);
-
         PreGenTask worker = PreGen.getInstance().createTask(world, config);
         worker.start();
-
         CommandUtils.send(context.getSource(), "Pregenerator started");
-
         return Command.SINGLE_SUCCESS;
     }
 
     private static int expand(CommandContext<CommandSource> context) throws CommandSyntaxException {
         Log.print(context.getInput());
 
-        Vec2f center = Vec2Argument.getVec2f(context, "center");
+        ServerWorld world = CommandUtils.getWorld(context);
+        Vec2f center = CommandUtils.getCenter(context, world);
         int innerRadius = IntegerArgumentType.getInteger(context, "innerRadius");
         int outerRadius = IntegerArgumentType.getInteger(context, "outerRadius");
 
@@ -142,7 +195,6 @@ public class PreGenCommand {
         int regionOuterRadius = PreGenRegion.chunkToRegion(outerRadius);
         int regionStart = (1 + regionInnerRadius * 2) * (1 + regionInnerRadius * 2);
 
-        ServerWorld world = CommandUtils.getWorld(context);
         PreGenConfig config = new PreGenConfig(regionX, regionZ, Math.max(regionInnerRadius + 1, regionOuterRadius));
         config.setRegionIndex(regionStart);
 
