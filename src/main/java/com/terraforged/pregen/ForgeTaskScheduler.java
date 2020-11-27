@@ -1,9 +1,9 @@
-package com.terraforged.pregen.forge;
+package com.terraforged.pregen;
 
-import com.terraforged.pregen.Log;
 import com.terraforged.pregen.task.Task;
 import com.terraforged.pregen.task.TaskQueue;
 import com.terraforged.pregen.task.TaskScheduler;
+import com.terraforged.pregen.util.Log;
 import net.minecraftforge.common.WorldWorkerManager;
 
 /**

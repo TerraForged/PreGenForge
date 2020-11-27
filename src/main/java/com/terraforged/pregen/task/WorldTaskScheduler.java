@@ -1,6 +1,6 @@
 package com.terraforged.pregen.task;
 
-import com.terraforged.pregen.Log;
+import com.terraforged.pregen.util.Log;
 
 // Tweaked version of forge's
 // https://github.com/MinecraftForge/MinecraftForge/blob/1.15.x/src/main/java/net/minecraftforge/common/WorldWorkerManager.java

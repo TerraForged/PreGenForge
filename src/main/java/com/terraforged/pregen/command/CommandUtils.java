@@ -5,13 +5,15 @@ import com.mojang.brigadier.Message;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import com.terraforged.pregen.Log;
+import com.terraforged.pregen.util.Log;
 import net.minecraft.command.CommandSource;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.command.arguments.DimensionArgument;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.storage.WorldInfo;
 
 import java.util.function.Predicate;
 
@@ -47,32 +49,37 @@ public class CommandUtils {
         try {
             return context.getArgument("center", Vec2f.class);
         } catch (Throwable t) {
-            BlockPos pos = world.getSpawnPoint();
-            return new Vec2f(pos.getX(), pos.getZ());
+            try {
+                PlayerEntity player = context.getSource().asPlayer();
+                return new Vec2f(player.getPosition().getX(), player.getPosition().getZ());
+            } catch (CommandSyntaxException e) {
+                WorldInfo info = world.getWorldInfo();
+                return new Vec2f(info.getSpawnX(), info.getSpawnZ());
+            }
         }
     }
 
     public static ServerWorld getWorld(CommandContext<CommandSource> context) throws CommandSyntaxException {
-        DimensionType dimension = getDimension(context, "dimension");
-        ServerWorld world = context.getSource().getServer().getWorld(dimension);
+        ServerWorld world = getDimension(context, "dimension");
         if (world == null) {
-            Message message = new LiteralMessage("Unable to get world for dimension: " + dimension);
+            Message message = new LiteralMessage("Unable to get dimension");
             throw new CommandSyntaxException(new SimpleCommandExceptionType(message), message);
         }
         return world;
     }
 
-    public static DimensionType getDimension(CommandContext<CommandSource> context, String name) throws CommandSyntaxException {
+    public static ServerWorld getDimension(CommandContext<CommandSource> context, String name) throws CommandSyntaxException {
         try {
+            DimensionType dimensionType = DimensionArgument.getDimensionArgument(context, name);
             // use the specified dimension type if provided
-            return context.getArgument(name, DimensionType.class);
+            return context.getSource().getServer().getWorld(dimensionType);
         } catch (IllegalArgumentException exception) {
             try {
                 // if command was run by player, use their current dimension as a fallback
-                return context.getSource().asPlayer().dimension;
+                return context.getSource().asPlayer().getServerWorld();
             } catch (CommandSyntaxException e) {
                 // otherwise use overworld by default
-                return DimensionType.OVERWORLD;
+                return context.getSource().getServer().getWorld(DimensionType.OVERWORLD);
             }
         }
     }
