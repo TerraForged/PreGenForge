@@ -10,9 +10,9 @@ Starts a standard pregenerator which generates an area of chunks.
 Note - The radius is in **chunks**. The total length of one side of the generated area will be roughly **`2 x <radius>`**
 
 - `/pregen start <radius>` - start a pregenerator centered on the world spawn
-- `/pregen start <dimension> <radius>` - start a pregenerator centered on the world spawn in the given dimension
-- `/pregen start <x> <z> <radius>` - start a pregenerator centered on the x,z coordinates
-- `/pregen start <dimension> <x> <z> <radius>` - start a pregenerator centered on the x,z coordinates in the given dimension
+- `/pregen start <radius> <dimension>` - start a pregenerator centered on the world spawn in the given dimension
+- `/pregen start <radius> <x> <z>` - start a pregenerator centered on the x,z coordinates
+- `/pregen start <radius> <x> <z> <dimension>` - start a pregenerator centered on the x,z coordinates in the given dimension
 
 #### Expand
 
@@ -22,10 +22,10 @@ chunks and don't want to waste resources loading those chunks from disk into mem
 Note - Radii are in **chunks**.
 
 - `/pregen expand <inner_radius> <outer_radius>` - start an 'expand' pregenerator centered on the world spawn
-- `/pregen expand <dimension> <inner_radius> <outer_radius>` - start an 'expand' pregenerator centered on the world
+- `/pregen expand <inner_radius> <outer_radius> <dimension>` - start an 'expand' pregenerator centered on the world
  spawn in the given dimension
-- `/pregen expand <x> <z> <inner_radius> <outer_radius>` - start an 'expand' pregenerator centered on the x,z coordinates
-- `/pregen expand <dimension> <x> <z> <inner_radius> <outer_radius>` - start an 'expand' pregenerator centered on the
+- `/pregen expand <inner_radius> <outer_radius> <x> <z>` - start an 'expand' pregenerator centered on the x,z coordinates
+- `/pregen expand <inner_radius> <outer_radius> <x> <z> <dimension>` - start an 'expand' pregenerator centered on the
  x,z coordinates in the given dimension
  
 #### Pause
