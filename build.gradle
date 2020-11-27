@@ -1,15 +1,18 @@
 buildscript {
     repositories {
         maven { url "https://files.minecraftforge.net/maven" }
+        maven { url "http://repo.spongepowered.org/maven" }
         jcenter()
         mavenCentral()
     }
     dependencies {
+        classpath group: "org.spongepowered", name: "mixingradle", version: "0.7-SNAPSHOT", changing: true
         classpath group: "net.minecraftforge.gradle", name: "ForgeGradle", version: "3.+", changing: true
     }
 }
 
 apply plugin: "net.minecraftforge.gradle"
+apply plugin: "org.spongepowered.mixin"
 apply plugin: "eclipse"
 
 version = "${mod_version}-mc${mc_version}"
@@ -42,6 +45,10 @@ minecraft {
     }
 }
 
+mixin {
+    add sourceSets.main, "mixin.pregenforge.refmap.json"
+}
+
 processResources {
     filesMatching("**/mods.toml") {
         filter {
@@ -66,7 +73,7 @@ jar {
                 "Implementation-Title"    : project.name,
                 "Implementation-Version"  : project.version,
                 "Implementation-Vendor"   : project.name,
-                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
         ])
     }
 }

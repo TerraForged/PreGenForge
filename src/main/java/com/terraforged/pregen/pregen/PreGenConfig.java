@@ -28,6 +28,11 @@ public class PreGenConfig {
         chunkIndex = root.get("chunk").getAsInt();
     }
 
+    public int getRegionCount() {
+        int size = radius + 1 + radius;
+        return size * size;
+    }
+
     public int getRegionIndex() {
         return regionIndex;
     }

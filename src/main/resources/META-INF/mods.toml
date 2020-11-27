@@ -1,5 +1,6 @@
 modLoader="javafml"
-loaderVersion="[31,)"
+loaderVersion="[35,]"
+license="no"
 issueTrackerURL="https://github.com/TerraForged/PreGenForge/issues"
 [[mods]]
     displayName="PreGenForge"

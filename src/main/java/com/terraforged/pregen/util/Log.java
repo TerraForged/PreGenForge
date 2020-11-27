@@ -1,5 +1,6 @@
-package com.terraforged.pregen;
+package com.terraforged.pregen.util;
 
+import com.terraforged.pregen.PreGen;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 

@@ -2,8 +2,12 @@ package com.terraforged.pregen;
 
 import com.terraforged.pregen.pregen.PreGenConfig;
 import com.terraforged.pregen.pregen.PreGenTask;
+import com.terraforged.pregen.task.AbstractTask;
 import com.terraforged.pregen.task.TaskScheduler;
+import com.terraforged.pregen.util.IO;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.Util;
+import net.minecraft.util.text.ChatType;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.server.ServerWorld;
 
@@ -22,7 +26,7 @@ public class PreGen {
     private final MinecraftServer server;
     private final TaskScheduler scheduler;
     private final Consumer<ITextComponent> messageSink;
-    private final Map<String, PreGenTask> generators = new HashMap<>();
+    private final Map<String, AbstractTask> generators = new HashMap<>();
     private final AtomicBoolean notifyPlayers = new AtomicBoolean(false);
 
     private PreGen(MinecraftServer server, TaskScheduler scheduler) {
@@ -30,9 +34,9 @@ public class PreGen {
         this.scheduler = scheduler;
         this.messageSink = msg -> {
             if (notifyPlayers.get()) {
-                server.getPlayerList().sendMessage(msg, true);
+                server.getPlayerList().func_232641_a_(msg, ChatType.GAME_INFO, Util.DUMMY_UUID);
             } else {
-                server.sendMessage(msg);
+                server.sendMessage(msg, Util.DUMMY_UUID);
             }
         };
     }
@@ -53,7 +57,7 @@ public class PreGen {
         return String.format(format, name);
     }
 
-    public Optional<PreGenTask> getTask(ServerWorld server) {
+    public Optional<AbstractTask> getTask(ServerWorld server) {
         return Optional.ofNullable(generators.get(PreGenTask.getName(server)));
     }
 
@@ -65,11 +69,11 @@ public class PreGen {
     }
 
     public void startTask(ServerWorld world) {
-        getTask(world).ifPresent(PreGenTask::start);
+        getTask(world).ifPresent(AbstractTask::start);
     }
 
     public void pauseTask(ServerWorld world) {
-        getTask(world).ifPresent(PreGenTask::pause);
+        getTask(world).ifPresent(AbstractTask::pause);
     }
 
     public void cancelTask(ServerWorld world) {
@@ -81,7 +85,7 @@ public class PreGen {
 
     public void onStartup() {
         for (ServerWorld world : server.getWorlds()) {
-            File file = IO.getConfigFile(world);
+            File file = IO.getConfigFile(PreGenTask.getName(world));
             if (file.exists()) {
                 try {
                     PreGenConfig config = IO.loadConfig(file);

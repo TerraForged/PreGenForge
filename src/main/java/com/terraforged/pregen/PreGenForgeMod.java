@@ -1,7 +1,7 @@
-package com.terraforged.pregen.forge;
+package com.terraforged.pregen;
 
-import com.terraforged.pregen.PreGen;
 import com.terraforged.pregen.command.PreGenCommand;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ExtensionPoint;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -24,10 +24,13 @@ public class PreGenForgeMod {
     }
 
     @SubscribeEvent
-    public static void starting(FMLServerStartingEvent event) {
+    public static void commands(RegisterCommandsEvent event) {
         // register commands
-        PreGenCommand.register(event.getCommandDispatcher());
+        PreGenCommand.register(event.getDispatcher());
+    }
 
+    @SubscribeEvent
+    public static void starting(FMLServerStartingEvent event) {
         // initialize pregen with the mc server and a task scheduler implementation
         // non-forge platforms may wish to use 'me.dags.pregen.task.WorldTaskScheduler.INSTANCE' (tick methods need "wiring up")
         PreGen.init(event.getServer(), new ForgeTaskScheduler());
