@@ -8,6 +8,7 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.terraforged.pregen.util.Log;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.arguments.DimensionArgument;
+import net.minecraft.command.arguments.Vec2Argument;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.vector.Vector2f;
 import net.minecraft.util.text.StringTextComponent;
@@ -47,7 +48,7 @@ public class CommandUtils {
 
     public static Vector2f getCenter(CommandContext<CommandSource> context, ServerWorld world) {
         try {
-            return context.getArgument("center", Vector2f.class);
+            return Vec2Argument.getVec2f(context, "center");
         } catch (Throwable t) {
             try {
                 PlayerEntity player = context.getSource().asPlayer();

@@ -27,6 +27,8 @@ public abstract class AbstractTask implements Task {
     protected final Stopwatch statsTimer = Stopwatch.createUnstarted();
     protected final Stopwatch cleanupTimer = Stopwatch.createUnstarted();
 
+    protected long startTime = 0L;
+
     protected long chunks = 0;
     protected long prevChunks = 0;
     protected int prevProgress = 0;
@@ -63,6 +65,7 @@ public abstract class AbstractTask implements Task {
     public boolean start() {
         if (stopped) {
             stopped = false;
+            startTime = System.currentTimeMillis();
             statsTimer.reset().start();
             cleanupTimer.reset().start();
             PreGen.getInstance().getScheduler().submit(this);
@@ -75,6 +78,7 @@ public abstract class AbstractTask implements Task {
     public boolean pause() {
         if (!stopped) {
             stopped = true;
+            startTime = System.currentTimeMillis();
             statsTimer.stop().reset();
             cleanupTimer.stop().reset();
             IO.saveConfig(config, getConfigFile());
@@ -167,7 +171,8 @@ public abstract class AbstractTask implements Task {
         float rate = getRate();
         double average = getAverageRate(rate);
         String eta = getETA(average);
-        Log.printf("(%s) Progress: %.2f%%, Chunks: %s/%s (%.2f/sec), ETA: %s", name, prog, chunks, chunkCount, rate, eta);
+        String elapsed = getElapsed();
+        Log.printf("%s: %.2f%%, Time: %s, ETA: %s, Chunks: %s/%s, Rate: %.2f/s, Avg: %.2f/s", name, prog, elapsed, eta, chunks, chunkCount, rate, average);
     }
 
     private int getProgressStep(int steps) {
@@ -193,6 +198,16 @@ public abstract class AbstractTask implements Task {
 
     private String getETA(double rate) {
         long time = Math.round((chunkCount - chunks) / rate);
+        return formatTime(time);
+    }
+
+    private String getElapsed() {
+        long now = System.currentTimeMillis();
+        long time = TimeUnit.MILLISECONDS.toSeconds(now - startTime);
+        return formatTime(time);
+    }
+
+    private static String formatTime(long time) {
         long hrs = time / 3600;
         long mins = (time - (hrs * 3600)) / 60;
         long secs = time - (hrs * 3600) - (mins * 60);

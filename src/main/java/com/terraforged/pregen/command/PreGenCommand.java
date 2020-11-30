@@ -95,7 +95,7 @@ public class PreGenCommand {
                                 .executes(PreGenCommand::cancel)))
                 // pregens a specific region
                 .then(Commands.literal("region")
-                        .then(Commands.argument("position", Args.vec2())
+                        .then(Commands.argument("center", Args.vec2())
                                 .executes(PreGenCommand::startRegion)
                                 .then(Commands.argument("dimension", Args.dim())
                                         .executes(PreGenCommand::startRegion))))
@@ -145,6 +145,7 @@ public class PreGenCommand {
         return Command.SINGLE_SUCCESS;
     }
 
+    // generates a square
     private static int start(CommandContext<CommandSource> context) throws CommandSyntaxException {
         Log.print(context.getInput());
         ServerWorld world = CommandUtils.getWorld(context);
@@ -157,9 +158,12 @@ public class PreGenCommand {
         PreGenTask worker = PreGen.getInstance().createTask(world, config);
         worker.start();
         CommandUtils.send(context.getSource(), "Pregenerator started");
+        CommandUtils.send(context.getSource(), "Use '/pregen notify true' to show periodic progress updates");
+        CommandUtils.send(context.getSource(), "Expect server lag & commands to take a few seconds to process");
         return Command.SINGLE_SUCCESS;
     }
 
+    // generates a donut
     private static int expand(CommandContext<CommandSource> context) throws CommandSyntaxException {
         Log.print(context.getInput());
 
@@ -181,9 +185,12 @@ public class PreGenCommand {
         worker.start();
 
         CommandUtils.send(context.getSource(), "Pregenerator started");
+        CommandUtils.send(context.getSource(), "Use '/pregen notify true' to show periodic progress updates");
+        CommandUtils.send(context.getSource(), "Expect server lag & commands to take a few seconds to process");
         return Command.SINGLE_SUCCESS;
     }
 
+    // generates one region file
     private static int startRegion(CommandContext<CommandSource> context) throws CommandSyntaxException {
         Log.print(context.getInput());
 

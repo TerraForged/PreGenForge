@@ -7,7 +7,7 @@ import net.minecraft.util.text.StringTextComponent;
 public class Log {
 
     public static ITextComponent format(String format, Object... args) {
-        return new StringTextComponent("[PreGen] " + String.format(format, args));
+        return new StringTextComponent("[PGF] " + String.format(format, args));
     }
 
     public static void printf(String format, Object... args) {
@@ -16,7 +16,7 @@ public class Log {
 
     public static void print(String... lines) {
         for (String line : lines) {
-            print(new StringTextComponent("[PreGen] " + line));
+            print(new StringTextComponent("[PGF] " + line));
         }
     }
 
