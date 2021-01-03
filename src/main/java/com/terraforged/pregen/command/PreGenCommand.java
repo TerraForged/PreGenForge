@@ -18,20 +18,12 @@ import net.minecraft.command.arguments.Vec2Argument;
 import net.minecraft.util.math.vector.Vector2f;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.IServerWorldInfo;
-import net.minecraftforge.event.CommandEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class PreGenCommand {
 
     private static final int MIN_RADIUS = 1;
-
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onCommand(CommandEvent event) {
-        event.setException(null);
-    }
 
     public static void register(CommandDispatcher<CommandSource> dispatcher) {
         registerUtils(dispatcher);
